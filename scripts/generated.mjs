@@ -18,7 +18,7 @@ export function generatedFiles({app, landing, cli, legacyAction}) {
   const out = new Map(), put = (path, value) => out.set(`integrations/testsy/${path}`, value);
   const identity = {name: 'testsy', version, description: 'Check releases, investigate failed runs and save regression tests with Testsy.',
     author: {name: 'Testsy', email: `contact@${new URL(landing).hostname}`, url: landing}, homepage: `${landing}/docs/mcp/`, license: 'MIT',
-    repository: {type: 'git', url: REPOS.source},
+    repository: REPOS.source,   // plugin manifests (Claude, Codex, Cursor) take the address as a string
     keywords: ['testing', 'qa', 'regression', 'release', 'mcp']};
   const token = 'Bearer ${QA_AI_API_KEY}';
   const nativeMcp = {mcpServers: {testsy: {type: 'http', url: `${app}/mcp`, headers: {Authorization: token}}}};
@@ -36,7 +36,7 @@ export function generatedFiles({app, landing, cli, legacyAction}) {
   put('manifests/codex.plugin.json', json({...identity, skills: './skills/', interface: display}));
   put('manifests/claude.plugin.json', json(identity));
   put('manifests/claude.mcp.json', json(nativeMcp));
-  put('manifests/cursor.plugin.json', json({...identity, repository: {type: 'git', url: REPOS.cursor}, skills: './skills/',
+  put('manifests/cursor.plugin.json', json({...identity, repository: REPOS.cursor, skills: './skills/',
     variables: {type: 'object', properties: {QA_AI_API_KEY: {type: 'string', title: 'Testsy API key',
       description: 'A workspace key from Testsy Settings → API keys. Run/edit permissions are needed to create and execute tests.'}}, required: ['QA_AI_API_KEY']}}));
   put('manifests/cursor.mcp.json', json({mcpServers: {testsy: {url: `${app}/mcp`, headers: {Authorization: token}}}}));
