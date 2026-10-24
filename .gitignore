@@ -1,0 +1,9 @@
+dist/
+release/
+node_modules/
+.env
+.env.*
+*.pem
+*.key
+results.xml
+testsy-junit.xml

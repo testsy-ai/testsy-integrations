@@ -1,0 +1,26 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "dev.testsy/testsy",
+  "title": "Testsy",
+  "description": "Run plain-English web QA tests and inspect check results and evidence.",
+  "version": "1.0.0",
+  "websiteUrl": "https://testsy.dev",
+  "repository": {
+    "url": "https://github.com/nhatlongsinh/testsy-integrations",
+    "source": "github"
+  },
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://app.testsy.dev/mcp",
+      "headers": [
+        {
+          "name": "Authorization",
+          "description": "Enter Bearer followed by your Testsy workspace API key.",
+          "isRequired": true,
+          "isSecret": true
+        }
+      ]
+    }
+  ]
+}

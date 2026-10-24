@@ -1,0 +1,19 @@
+{
+  "name": "testsy-integrations",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Testsy agent workflows, client packages and pinned CI action.",
+  "license": "MIT",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "export": "node scripts/export.mjs",
+    "archives": "node scripts/archive.mjs",
+    "downloads": "node scripts/archive.mjs --public-assets",
+    "downloads:check": "node scripts/archive.mjs --check-public-assets",
+    "check": "node scripts/validate.mjs && node --test tests/*.test.mjs",
+    "test": "node --test tests/*.test.mjs"
+  },
+  "bin": { "testsy": "./bin/testsy.mjs" }
+}

@@ -1,0 +1,40 @@
+{
+  "name": "testsy",
+  "version": "1.0.0",
+  "description": "Check releases, investigate failed runs and save regression tests with Testsy.",
+  "author": {
+    "name": "Testsy",
+    "email": "contact@testsy.dev",
+    "url": "https://testsy.dev"
+  },
+  "homepage": "https://testsy.dev/docs/mcp/",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nhatlongsinh/testsy-integrations"
+  },
+  "keywords": [
+    "testing",
+    "qa",
+    "regression",
+    "release",
+    "mcp"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Testsy",
+    "shortDescription": "Check your app and inspect the evidence",
+    "longDescription": "Check releases, investigate failed runs and save regression tests with Testsy.",
+    "developerName": "Testsy",
+    "category": "Developer Tools",
+    "websiteURL": "https://testsy.dev",
+    "privacyPolicyURL": "https://testsy.dev/privacy",
+    "termsOfServiceURL": "https://testsy.dev/terms",
+    "supportURL": "https://testsy.dev/docs/",
+    "defaultPrompt": [
+      "Check my release with Testsy.",
+      "Investigate this failed Testsy run.",
+      "Turn this bug into a Testsy regression test."
+    ]
+  }
+}
