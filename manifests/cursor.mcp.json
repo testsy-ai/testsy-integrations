@@ -3,7 +3,7 @@
     "testsy": {
       "url": "https://app.testsy.dev/mcp",
       "headers": {
-        "Authorization": "Bearer ${QA_AI_API_KEY}"
+        "Authorization": "Bearer ${TESTSY_AI_API_KEY}"
       }
     }
   }

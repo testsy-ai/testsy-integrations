@@ -3,7 +3,7 @@
   "name": "dev.testsy/testsy",
   "title": "Testsy",
   "description": "Run plain-English web QA tests and inspect check results and evidence.",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "websiteUrl": "https://testsy.dev",
   "repository": {
     "url": "https://github.com/testsy-ai/testsy-integrations",

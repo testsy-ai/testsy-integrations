@@ -1,6 +1,6 @@
 {
   "name": "testsy",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": "Check releases, investigate failed runs and save regression tests with Testsy.",
   "author": {
     "name": "Testsy",

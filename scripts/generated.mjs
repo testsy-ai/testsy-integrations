@@ -23,7 +23,7 @@ export function generatedFiles({app, landing, cli, legacyAction}) {
     author: {name: 'Testsy', email: `contact@${new URL(landing).hostname}`, url: landing}, homepage: `${landing}/docs/mcp/`, license: 'MIT',
     repository: REPOS.source,   // plugin manifests (Claude, Codex, Cursor) take the address as a string
     keywords: ['testing', 'qa', 'regression', 'release', 'mcp']};
-  const token = 'Bearer ${QA_AI_API_KEY}';
+  const token = 'Bearer ${TESTSY_AI_API_KEY}';
   const nativeMcp = {mcpServers: {testsy: {type: 'http', url: `${app}/mcp`, headers: {Authorization: token}}}};
   const display = {displayName: 'Testsy', shortDescription: 'Check your app and inspect the evidence',
     longDescription: identity.description, developerName: 'Testsy', category: 'Developer Tools',
@@ -40,12 +40,12 @@ export function generatedFiles({app, landing, cli, legacyAction}) {
   put('manifests/claude.plugin.json', json(identity));
   put('manifests/claude.mcp.json', json(nativeMcp));
   put('manifests/cursor.plugin.json', json({...identity, repository: REPOS.cursor, skills: './skills/',
-    variables: {type: 'object', properties: {QA_AI_API_KEY: {type: 'string', title: 'Testsy API key',
-      description: 'A workspace key from Testsy Settings → API keys. Run/edit permissions are needed to create and execute tests.'}}, required: ['QA_AI_API_KEY']}}));
+    variables: {type: 'object', properties: {TESTSY_AI_API_KEY: {type: 'string', title: 'Testsy API key',
+      description: 'A workspace key from Testsy Settings → API keys. Run/edit permissions are needed to create and execute tests.'}}, required: ['TESTSY_AI_API_KEY']}}));
   put('manifests/cursor.mcp.json', json({mcpServers: {testsy: {url: `${app}/mcp`, headers: {Authorization: token}}}}));
   put('manifests/gemini-extension.json', json({name: 'testsy', version, description: identity.description,
     mcpServers: {testsy: {httpUrl: `${app}/mcp`, headers: {Authorization: token}}},
-    settings: [{name: 'Testsy API key', description: 'A workspace key from Testsy Settings → API keys.', envVar: 'QA_AI_API_KEY', sensitive: true}]}));
+    settings: [{name: 'Testsy API key', description: 'A workspace key from Testsy Settings → API keys.', envVar: 'TESTSY_AI_API_KEY', sensitive: true}]}));
   put('server.json', json({$schema: 'https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json',
     name: 'dev.testsy/testsy', title: 'Testsy', description: 'Run plain-English web QA tests and inspect check results and evidence.', version,
     websiteUrl: landing, repository: {url: REPOS.source, source: 'github'},
@@ -53,8 +53,8 @@ export function generatedFiles({app, landing, cli, legacyAction}) {
     remotes: [{type: 'streamable-http', url: `${app}/mcp`,
       headers: [{name: 'Authorization', description: 'Optional: Bearer followed by a Testsy workspace API key. Without it, clients sign in with OAuth when a tool is first called; listing the tools needs neither.', isRequired: false, isSecret: true}]}]}));
   put('config.json', json({app, landing, repos: REPOS}));
-  const cliSource = cli.replace(/(process\.env\.QA_AI_URL \|\| )'[^']+'/, `$1'${app}'`);
-  out.set('apps/customer/public/cli/qa-ai.mjs', cliSource);
+  const cliSource = cli.replace(/(process\.env\.TESTSY_AI_URL \|\| )'[^']+'/, `$1'${app}'`);
+  out.set('apps/customer/public/cli/testsy-ai.mjs', cliSource);
   put('bin/testsy.mjs', cliSource);
   put('action.yml', action(app));
   // Existing downloadable action retains its hosted-client behavior; the new public package pins its client.
@@ -141,8 +141,8 @@ runs:
       id: testsy
       shell: bash
       env:
-        QA_AI_API_KEY: \${{ inputs.api-key }}
-        QA_AI_URL: \${{ inputs.url }}
+        TESTSY_AI_API_KEY: \${{ inputs.api-key }}
+        TESTSY_AI_URL: \${{ inputs.url }}
         IN_PROJECT: \${{ inputs.project }}
         IN_TESTS: \${{ inputs.tests }}
         IN_MODE: \${{ inputs.mode }}

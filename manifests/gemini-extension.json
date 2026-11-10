@@ -1,12 +1,12 @@
 {
   "name": "testsy",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": "Check releases, investigate failed runs and save regression tests with Testsy.",
   "mcpServers": {
     "testsy": {
       "httpUrl": "https://app.testsy.dev/mcp",
       "headers": {
-        "Authorization": "Bearer ${QA_AI_API_KEY}"
+        "Authorization": "Bearer ${TESTSY_AI_API_KEY}"
       }
     }
   },
@@ -14,7 +14,7 @@
     {
       "name": "Testsy API key",
       "description": "A workspace key from Testsy Settings → API keys.",
-      "envVar": "QA_AI_API_KEY",
+      "envVar": "TESTSY_AI_API_KEY",
       "sensitive": true
     }
   ]

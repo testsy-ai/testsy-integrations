@@ -71,8 +71,8 @@ runs:
       id: testsy
       shell: bash
       env:
-        QA_AI_API_KEY: ${{ inputs.api-key }}
-        QA_AI_URL: ${{ inputs.url }}
+        TESTSY_AI_API_KEY: ${{ inputs.api-key }}
+        TESTSY_AI_URL: ${{ inputs.url }}
         IN_PROJECT: ${{ inputs.project }}
         IN_TESTS: ${{ inputs.tests }}
         IN_MODE: ${{ inputs.mode }}

@@ -45,15 +45,15 @@ test('host generation updates every runtime address without embedding the caller
   assert.equal(JSON.parse(files.get('integrations/testsy/manifests/gemini-extension.json')).mcpServers.testsy.httpUrl, `${config.app}/mcp`);
   assert.equal(JSON.parse(files.get('integrations/testsy/server.json')).remotes[0].url, `${config.app}/mcp`);
   assert.ok(files.get('integrations/testsy/action.yml').includes(`default: ${config.app}`));
-  assert.ok(files.get('integrations/testsy/bin/testsy.mjs').includes(`process.env.QA_AI_URL || '${config.app}'`));
+  assert.ok(files.get('integrations/testsy/bin/testsy.mjs').includes(`process.env.TESTSY_AI_URL || '${config.app}'`));
   assert.ok(files.get('apps/customer/integrations/github-action/action.yml').includes(`default: ${config.app}`));
 });
 
 test('package integrity validates independently of any API key or model access', () => {
-  const prior = process.env.QA_AI_API_KEY;
-  delete process.env.QA_AI_API_KEY;
+  const prior = process.env.TESTSY_AI_API_KEY;
+  delete process.env.TESTSY_AI_API_KEY;
   try { assert.equal(validate().skills, 3); }
-  finally { if (prior !== undefined) process.env.QA_AI_API_KEY = prior; }
+  finally { if (prior !== undefined) process.env.TESTSY_AI_API_KEY = prior; }
 });
 
 test('standalone export is an allowlisted package that builds without the private parent', () => {

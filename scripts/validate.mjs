@@ -64,13 +64,13 @@ export function validate() {
   for (const name of ['claude.mcp.json', 'cursor.mcp.json']) {
     const server = load(`manifests/${name}`).mcpServers.testsy;
     assert.equal(server.url, `${config.app}/mcp`);
-    assert.equal(server.headers.Authorization, 'Bearer ${QA_AI_API_KEY}');
+    assert.equal(server.headers.Authorization, 'Bearer ${TESTSY_AI_API_KEY}');
   }
-  assert.deepEqual(load('manifests/cursor.plugin.json').variables.required, ['QA_AI_API_KEY']);
+  assert.deepEqual(load('manifests/cursor.plugin.json').variables.required, ['TESTSY_AI_API_KEY']);
   const gemini = load('manifests/gemini-extension.json');
   assert.equal(gemini.mcpServers.testsy.httpUrl, `${config.app}/mcp`);
-  assert.equal(gemini.mcpServers.testsy.headers.Authorization, 'Bearer ${QA_AI_API_KEY}');
-  assert.equal(gemini.settings.find(x => x.envVar === 'QA_AI_API_KEY')?.sensitive, true);
+  assert.equal(gemini.mcpServers.testsy.headers.Authorization, 'Bearer ${TESTSY_AI_API_KEY}');
+  assert.equal(gemini.settings.find(x => x.envVar === 'TESTSY_AI_API_KEY')?.sensitive, true);
   const oauth = load('manifests/oauth.mcp.json');
   assert.equal(oauth.$schema, 'https://agent-plugins.org/schemas/1.0.0/mcp.schema.json');
   assert.deepEqual(oauth.mcpServers.testsy, {type: 'streamable-http', url: `${config.app}/mcp`});
@@ -88,7 +88,7 @@ export function validate() {
   assert.ok(action.includes('node "$GITHUB_ACTION_PATH/bin/testsy.mjs" "$@"'));
   assert.doesNotMatch(action, /curl|wget|npx|eval\s/);
   assert.doesNotMatch(action, /\{[^\n]*\$\{\{/); // GitHub expressions cannot be used inside YAML flow mappings.
-  const source = new URL('../../../apps/customer/public/cli/qa-ai.mjs', import.meta.url);
+  const source = new URL('../../../apps/customer/public/cli/testsy-ai.mjs', import.meta.url);
   if (existsSync(source)) assert.equal(read('bin/testsy.mjs'), readFileSync(source, 'utf8'), 'Run parent config-gen to refresh the pinned CLI.');
   return {version, skills: skillNames.length, files: files.length};
 }

@@ -31,7 +31,7 @@ async function fixture(status, failOn = 'failed,error', project = 'p_fixture', f
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   try {
     const result = await new Promise(resolve => execFile('bash', ['-c', shell], {timeout: 15000,
-      env: {...process.env, QA_AI_API_KEY: key, QA_AI_URL: `http://127.0.0.1:${server.address().port}`, GITHUB_ACTION_PATH: root,
+      env: {...process.env, TESTSY_AI_API_KEY: key, TESTSY_AI_URL: `http://127.0.0.1:${server.address().port}`, GITHUB_ACTION_PATH: root,
         IN_PROJECT: project, IN_TESTS: '', IN_MODE: 'cold', IN_TIMEOUT: '5s', IN_FAIL_ON: failOn, IN_JUNIT: junit, IN_BUILD: '', IN_BUILD_LABEL: '', IN_FINGERPRINT: fingerprint, IN_TARGET_URL: targetUrl, IN_DEVICE: device, IN_OS_VERSION: osVersion,
         GITHUB_STEP_SUMMARY: join(directory, 'summary.md'), GITHUB_OUTPUT: join(directory, 'output.txt')}}, (error, stdout, stderr) => resolve({code: error?.code ?? 0, stdout, stderr})));
     assert.doesNotMatch(result.stdout + result.stderr, new RegExp(key), 'Never log the API key.');

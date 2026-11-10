@@ -1,18 +1,18 @@
 #!/usr/bin/env node
 // Testsy command-line client (Node 18+, no dependencies). Runs tests from CI and waits for the results.
-//   export QA_AI_API_KEY=qa_…            (Settings → API keys)
-//   node qa-ai.mjs run --project p_123   (every test in the project)
-//   node qa-ai.mjs run --test t_1,t_2 --junit qa-ai.xml
-//   node qa-ai.mjs run --project p_123 --url https://pr-42.preview.example.com   (website tests start at this deploy instead of their saved address)
-//   node qa-ai.mjs status j_abc   |   node qa-ai.mjs projects   |   node qa-ai.mjs tests --project p_123
-//   Devices:     node qa-ai.mjs run --project p_123 --device tablet --os-version "iOS 26" --orientation landscape   (app tests on that device this time; node qa-ai.mjs devices lists them)
-//   Mobile apps: node qa-ai.mjs run --project p_123 --build app-debug.apk   (uploads the build — or reuses it if that exact file is already there — and runs the app's tests with it)
-//                node qa-ai.mjs build upload MyApp.app.zip --project p_123 --label "$GITHUB_SHA"   |   node qa-ai.mjs builds --project p_123
-//                node qa-ai.mjs build ensure app.apk --project p_123 --fingerprint "$FP"   (upload only if missing)
-//                node qa-ai.mjs run --project p_123 --build build/Build/Products/Debug-iphonesimulator/MyApp.app   (a raw .app folder is zipped for you)
-//                node qa-ai.mjs build find --project p_123 --fingerprint "$FP"             (is the native build already there? exit 0 yes / 1 no)
-//                node qa-ai.mjs build upload MyApp.app.zip --upload "<signed link from create_build_upload>"   (no API key needed)
-//                node qa-ai.mjs run --project p_123 --build https://…/app.apk   |   node qa-ai.mjs build import <https link> --project p_123 [--header "Authorization: Bearer …"]
+//   export TESTSY_AI_API_KEY=qa_…            (Settings → API keys)
+//   node testsy-ai.mjs run --project p_123   (every test in the project)
+//   node testsy-ai.mjs run --test t_1,t_2 --junit testsy-ai.xml
+//   node testsy-ai.mjs run --project p_123 --url https://pr-42.preview.example.com   (website tests start at this deploy instead of their saved address)
+//   node testsy-ai.mjs status j_abc   |   node testsy-ai.mjs projects   |   node testsy-ai.mjs tests --project p_123
+//   Devices:     node testsy-ai.mjs run --project p_123 --device tablet --os-version "iOS 26" --orientation landscape   (app tests on that device this time; node testsy-ai.mjs devices lists them)
+//   Mobile apps: node testsy-ai.mjs run --project p_123 --build app-debug.apk   (uploads the build — or reuses it if that exact file is already there — and runs the app's tests with it)
+//                node testsy-ai.mjs build upload MyApp.app.zip --project p_123 --label "$GITHUB_SHA"   |   node testsy-ai.mjs builds --project p_123
+//                node testsy-ai.mjs build ensure app.apk --project p_123 --fingerprint "$FP"   (upload only if missing)
+//                node testsy-ai.mjs run --project p_123 --build build/Build/Products/Debug-iphonesimulator/MyApp.app   (a raw .app folder is zipped for you)
+//                node testsy-ai.mjs build find --project p_123 --fingerprint "$FP"             (is the native build already there? exit 0 yes / 1 no)
+//                node testsy-ai.mjs build upload MyApp.app.zip --upload "<signed link from create_build_upload>"   (no API key needed)
+//                node testsy-ai.mjs run --project p_123 --build https://…/app.apk   |   node testsy-ai.mjs build import <https link> --project p_123 [--header "Authorization: Bearer …"]
 // Exit codes: 0 passed · 1 a run ended in a --fail-on result (build find: not found) · 2 usage, API or run-start error · 3 timed out.
 import {writeFileSync, appendFileSync, openSync, readSync, closeSync, statSync, existsSync, readFileSync, mkdirSync} from 'node:fs';
 import {basename} from 'node:path';
@@ -45,8 +45,8 @@ export function ciPublic(e = process.env) {
 }
 const CI = ciInfo(), CI_HEADERS = CI ? Object.fromEntries(Object.entries({ 'X-QA-CI-Provider': CI.provider, 'X-QA-CI-Commit': CI.commit, 'X-QA-CI-Branch': CI.branch, 'X-QA-CI-Job': CI.job, 'X-QA-CI-Url': CI.url, 'X-QA-CI-Public': ciPublic() ? '1' : '' })
   .filter(([, v]) => v).map(([k, v]) => [k, String(v).replace(/[^\x20-\x7e]/g, '?').slice(0, 400)])) : {};
-const BASE = (process.env.QA_AI_URL || 'https://app.testsy.dev').replace(/\/+$/, '');
-const KEY = process.env.QA_AI_API_KEY || '';
+const BASE = (process.env.TESTSY_AI_URL || 'https://app.testsy.dev').replace(/\/+$/, '');
+const KEY = process.env.TESTSY_AI_API_KEY || '';
 const FINAL = new Set(['passed', 'failed', 'blocked', 'inconclusive', 'error', 'cancelled']);
 const RUN_POLL_BATCH_SIZE = 50; // /runs?ids returns at most 50 full run views per request.
 
@@ -63,16 +63,16 @@ function args(argv) {
   }
   return out;
 }
-const die = (msg, code = 2) => { console.error(`qa-ai: ${msg}`); process.exit(code); };
+const die = (msg, code = 2) => { console.error(`testsy-ai: ${msg}`); process.exit(code); };
 /** idem: send an Idempotency-Key (run starts), the same on every retry, so a retried request whose first response was
  * lost returns that response instead of starting (and billing) a second run. */
 async function call(method, path, body, idem = false, { allowNotStarted = false } = {}) {
-  if (!KEY) die('set QA_AI_API_KEY (create a key in Settings → API keys).');
+  if (!KEY) die('set TESTSY_AI_API_KEY (create a key in Settings → API keys).');
   const idemKey = idem ? `cli-${randomUUID()}` : null;
   let res;
   for (let attempt = 0; ; attempt++) {
     try {
-      res = await fetch(`${BASE}/api/v1${path}`, { method, headers: { Authorization: `Bearer ${KEY}`, 'X-QA-Source': 'ci', 'User-Agent': `qa-ai-cli/${VERSION}`, ...CI_HEADERS, ...(idemKey ? { 'Idempotency-Key': idemKey } : {}), ...(body ? { 'Content-Type': 'application/json' } : {}) }, body: body ? JSON.stringify(body) : undefined });
+      res = await fetch(`${BASE}/api/v1${path}`, { method, headers: { Authorization: `Bearer ${KEY}`, 'X-QA-Source': 'ci', 'User-Agent': `testsy-ai-cli/${VERSION}`, ...CI_HEADERS, ...(idemKey ? { 'Idempotency-Key': idemKey } : {}), ...(body ? { 'Content-Type': 'application/json' } : {}) }, body: body ? JSON.stringify(body) : undefined });
       if (res.status >= 500 || res.status === 429) throw new Error(`HTTP ${res.status}`);
       if (res.status === 409 && idemKey && (await res.clone().json().catch(() => ({}))).code === 'idempotency_in_progress') throw new Error('HTTP 409 (first request still in progress)');
       break;
@@ -96,7 +96,7 @@ function junit(runs) {
     const name = xml(r.testTitle || r.testId), time = ((r.durationMs || 0) / 1000).toFixed(1);
     const detail = xml([r.headline, ...(r.requirements || []).map(q => `${q.outcome === 'pass' ? '✓' : q.outcome === 'fail' ? '✗' : '?'} ${q.requirement} — ${q.reason}`), r.link].filter(Boolean).join('\n'));
     const body = r.status === 'passed' ? '' : r.status === 'failed' ? `<failure message="${xml(r.headline || 'failed')}">${detail}</failure>` : `<error message="${xml(r.status)}">${detail}</error>`;
-    return `  <testcase classname="qa-ai" name="${name}" time="${time}">${body}<system-out>${xml([r.link, r.watchUrl ? `watch: ${r.watchUrl}` : ''].filter(Boolean).join('\n'))}</system-out></testcase>`;
+    return `  <testcase classname="testsy-ai" name="${name}" time="${time}">${body}<system-out>${xml([r.link, r.watchUrl ? `watch: ${r.watchUrl}` : ''].filter(Boolean).join('\n'))}</system-out></testcase>`;
   });
   return `<?xml version="1.0" encoding="UTF-8"?>\n<testsuite name="Testsy" tests="${runs.length}" failures="${failures}" errors="${errors}">\n${cases.join('\n')}\n</testsuite>\n`;
 }
@@ -115,7 +115,7 @@ const describe = b => `build ${b.id}: ${b.platform === 'ios' ? 'iOS' : 'Android'
  * named MyApp.app.zip; anything else is returned as is. */
 function packIfAppFolder(file) {
   if (!/\.app\/?$/i.test(file) || !existsSync(file) || !statSync(file).isDirectory()) return file;
-  const dir = file.replace(/\/+$/, ''), name = basename(dir), tmp = `${tmpdir()}/qa-ai-${process.pid}`, out = `${tmp}/${name}.zip`;
+  const dir = file.replace(/\/+$/, ''), name = basename(dir), tmp = `${tmpdir()}/testsy-ai-${process.pid}`, out = `${tmp}/${name}.zip`;
   mkdirSync(tmp, { recursive: true });
   const parent = dir.slice(0, dir.length - name.length) || '.';
   console.log(`zipping ${name} as ${name}.zip`);
@@ -142,7 +142,7 @@ async function findBuild(project, { sha256, fingerprint }) {
 async function putPart(url, buf, keyed) {
   for (let attempt = 0; ; attempt++) {
     let res;
-    try { res = await fetch(url, { method: 'PUT', headers: { ...(keyed ? { Authorization: `Bearer ${KEY}` } : {}), 'X-QA-Source': 'ci', 'User-Agent': `qa-ai-cli/${VERSION}`, 'Content-Type': 'application/octet-stream' }, body: buf }); }
+    try { res = await fetch(url, { method: 'PUT', headers: { ...(keyed ? { Authorization: `Bearer ${KEY}` } : {}), 'X-QA-Source': 'ci', 'User-Agent': `testsy-ai-cli/${VERSION}`, 'Content-Type': 'application/octet-stream' }, body: buf }); }
     catch (e) { if (attempt >= 4) die(`upload failed: ${e.message}`); await sleep(2000 * (attempt + 1)); continue; }
     const d = await res.json().catch(() => ({}));
     if (res.ok) return d;
@@ -181,12 +181,12 @@ async function uploadSigned(file, link) {
   if (!u.searchParams.get('token') || !/\/api\/v1\/builds\/ab_\w+\/upload$/.test(u.pathname)) die('--upload needs the signed link from create_build_upload');
   const base = `${u.origin}${u.pathname.replace(/\/upload$/, '')}`, q = `?token=${encodeURIComponent(u.searchParams.get('token'))}`;
   const get = async (url, init) => { const res = await fetch(url, init).catch(e => die(`cannot reach ${u.origin}: ${e.message}`)); const d = await res.json().catch(() => ({})); if (!res.ok) die(d.error || `HTTP ${res.status}`); return d; };
-  const s = await get(`${base}/upload${q}`, { headers: { 'User-Agent': `qa-ai-cli/${VERSION}` } });
+  const s = await get(`${base}/upload${q}`, { headers: { 'User-Agent': `testsy-ai-cli/${VERSION}` } });
   const size = statSync(file).size;
   if (s.status !== 'uploading') die(`this upload is ${s.status}; create a new one`);
   if (s.size !== size) die(`${basename(file)} is ${size} bytes; the upload was created for ${s.size} bytes (${s.fileName}). Create the upload with the file's real size.`);
   return sendParts(file, size, basename(file), { ...s, keyed: false, partUrl: n => `${base}/parts/${n}${q}`,
-    complete: parts => get(`${base}/complete${q}`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'User-Agent': `qa-ai-cli/${VERSION}` }, body: JSON.stringify({ parts }) }) });
+    complete: parts => get(`${base}/complete${q}`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'User-Agent': `testsy-ai-cli/${VERSION}` }, body: JSON.stringify({ parts }) }) });
 }
 /** Fetch a build from an https link (EAS, Bitrise, S3, GitHub artifact…): the server downloads and checks it. */
 async function importBuild(url, project, label, fingerprint, headerFlags) {
@@ -289,7 +289,7 @@ const code = await (async () => {
   if (cmd === 'projects') { for (const p of (await call('GET', '/projects')).projects) console.log(`${p.id}\t${p.name}`); return 0; }
   if (cmd === 'tests') { if (!a.project) die('give --project <id>'); for (const t of (await call('GET', `/projects/${a.project}/tests`)).tests) console.log(`${t.id}\t${t.lastRun?.status ?? 'never run'}\t${t.options?.platform && t.options.platform !== 'web' ? `${t.options.platform}:${t.options.appId}\t` : ''}${t.title}`); return 0; }
   if (cmd === 'build' && (a._[1] === 'upload' || a._[1] === 'ensure')) {
-    if (!a._[2]) die(`give the build file: qa-ai build ${a._[1]} app.apk --project <id>`);
+    if (!a._[2]) die(`give the build file: testsy-ai build ${a._[1]} app.apk --project <id>`);
     const label = a.label || process.env.GITHUB_SHA?.slice(0, 12) || process.env.CI_COMMIT_SHORT_SHA || '';
     const b = a.upload ? await uploadSigned(a._[2], a.upload) : a._[1] === 'ensure' ? await ensureBuild(a._[2], a.project, label, a.fingerprint) : await uploadBuild(a._[2], a.project, label, a.fingerprint);
     if (a.json) console.log(JSON.stringify(b)); else console.log(b.id);
@@ -297,7 +297,7 @@ const code = await (async () => {
     return 0;
   }
   if (cmd === 'build' && a._[1] === 'import') {
-    if (!a._[2]) die('give the link: qa-ai build import https://… --project <id>');
+    if (!a._[2]) die('give the link: testsy-ai build import https://… --project <id>');
     const b = await importBuild(a._[2], a.project, a.label || process.env.GITHUB_SHA?.slice(0, 12) || process.env.CI_COMMIT_SHORT_SHA || '', a.fingerprint, a.header);
     if (a.json) console.log(JSON.stringify(b)); else console.log(b.id);
     githubOutput([['build-id', b.id]]);
@@ -309,27 +309,27 @@ const code = await (async () => {
     const needed = !found.build;
     if (a.json) console.log(JSON.stringify(found)); else if (found.build) console.log(found.build.id); else console.error('no build found: build and upload it');
     githubOutput([['build-id', found.build?.id ?? ''], ['build-needed', needed ? 'true' : 'false']]);
-    if (a.dotenv) writeFileSync(a.dotenv, `QA_AI_BUILD_NEEDED=${needed}\nQA_AI_BUILD_ID=${found.build?.id ?? ''}\n`);
+    if (a.dotenv) writeFileSync(a.dotenv, `TESTSY_AI_BUILD_NEEDED=${needed}\nTESTSY_AI_BUILD_ID=${found.build?.id ?? ''}\n`);
     return needed ? 1 : 0;
   }
   if (cmd === 'builds') { if (!a.project) die('give --project <id>'); for (const b of (await call('GET', `/projects/${a.project}/builds`)).builds) console.log(`${b.id}\t${b.platform}\t${b.appId}\t${b.version ?? ''}${b.versionCode && b.versionCode !== b.version ? ` (${b.versionCode})` : ''}\t${b.label ?? ''}\t${b.createdAt}`); return 0; }
   if (cmd === 'version' || a.version) { console.log(VERSION); return 0; }
   console.log(`Testsy CLI ${VERSION}
 usage:
-  qa-ai run --project <p_id> [--test <t_id,…>] [--mode auto|cold|warm] [--timeout 45m] [--junit file.xml] [--fail-on failed,error] [--no-wait] [--url <https://preview…>]
+  testsy-ai run --project <p_id> [--test <t_id,…>] [--mode auto|cold|warm] [--timeout 45m] [--junit file.xml] [--fail-on failed,error] [--no-wait] [--url <https://preview…>]
             [--build <app.apk | MyApp.app.zip | MyApp.app folder | https link | ab_id>]…  (app tests run these builds; files are uploaded, links imported) [--label <text>]
             [--device phone|tablet] [--os-version <latest | "iOS 26" | "Android 14">] [--orientation default|portrait|landscape]  (app tests on that device this run; the tests keep their setting)
-  qa-ai devices   (the phones, tablets and OS versions app tests can use)
-  qa-ai build upload <app.apk | MyApp.app.zip> --project <p_id> [--label <text>] [--fingerprint <text>] [--json]
-  qa-ai build upload <file> --upload <signed link from create_build_upload>   (no API key)
-  qa-ai build import <https link> --project <p_id> [--header "Name: value"]… [--label <text>] [--fingerprint <text>] [--json]
-  qa-ai build ensure <app.apk | MyApp.app.zip> --project <p_id> [--fingerprint <text>] [--label <text>] [--json]   (upload only if missing)
-  qa-ai build find --project <p_id> [--file <build> | --sha256 <hex>] [--fingerprint <text>] [--json] [--dotenv <file>]   (exit 0 found / 1 not)
-  qa-ai builds --project <p_id>
-  qa-ai status <j_id…>
-  qa-ai projects
-  qa-ai tests --project <p_id>
-env: QA_AI_API_KEY (required), QA_AI_URL (default ${BASE})`);
+  testsy-ai devices   (the phones, tablets and OS versions app tests can use)
+  testsy-ai build upload <app.apk | MyApp.app.zip> --project <p_id> [--label <text>] [--fingerprint <text>] [--json]
+  testsy-ai build upload <file> --upload <signed link from create_build_upload>   (no API key)
+  testsy-ai build import <https link> --project <p_id> [--header "Name: value"]… [--label <text>] [--fingerprint <text>] [--json]
+  testsy-ai build ensure <app.apk | MyApp.app.zip> --project <p_id> [--fingerprint <text>] [--label <text>] [--json]   (upload only if missing)
+  testsy-ai build find --project <p_id> [--file <build> | --sha256 <hex>] [--fingerprint <text>] [--json] [--dotenv <file>]   (exit 0 found / 1 not)
+  testsy-ai builds --project <p_id>
+  testsy-ai status <j_id…>
+  testsy-ai projects
+  testsy-ai tests --project <p_id>
+env: TESTSY_AI_API_KEY (required), TESTSY_AI_URL (default ${BASE})`);
   return cmd ? 2 : 0;
 })();
 process.exitCode = code; // Let piped CI output drain before exiting, including large suites' final summaries.
