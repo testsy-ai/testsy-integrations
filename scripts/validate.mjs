@@ -9,6 +9,22 @@ const load = name => JSON.parse(read(name));
 export const skillNames = ['testsy-check-release', 'testsy-investigate-run', 'testsy-regression-from-bug'];
 
 /** Local integrity and auth-wiring checks, not a substitute for host-side/client validation. */
+/** Lines whose plain (unquoted, not block) mapping value contains ": " — invalid YAML ("mapping values are not allowed").
+ * The 2026-11-02 action broke this way in GitHub while every local check, which only runs the step's script, passed. */
+export function plainColons(text) {
+  const out = []; let block = -1;
+  text.split('\n').forEach((line, i) => {
+    const ind = line.match(/^ */)[0].length;
+    if (block >= 0 && (ind > block || !line.trim())) return; block = -1;
+    const m = /^\s*(?:- )?[\w.-]+:\s+(.*)$/.exec(line); if (!m) return;
+    const v = m[1].replace(/\s+#.*$/, '');
+    if (/^[|>]/.test(v)) { block = ind; return; }
+    if (/^["'{[&*!]/.test(v) || /^\$\{\{/.test(v)) return;
+    if (/: /.test(v)) out.push(i + 1);
+  });
+  return out;
+}
+
 export function validate() {
   const version = load('package.json').version, config = load('config.json');
   assert.match(version, /^\d+\.\d+\.\d+$/);
@@ -26,7 +42,7 @@ export function validate() {
   for (const path of files) {
     const text = readFileSync(path, 'utf8');
     assert.doesNotMatch(text, /\bqa_[A-Za-z0-9]{24,}\b|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/, `Possible embedded secret: ${path}`);
-    assert.doesNotMatch(text, /qa-app\.nhatlongsinh\.workers\.dev/, `Retired production host: ${path}`);
+    assert.doesNotMatch(text, /qa-app\.[a-z0-9-]+\.workers\.dev/, `Retired production host: ${path}`);
   }
   for (const name of skillNames) {
     const body = read(`skills/${name}/SKILL.md`), front = /^---\n([\s\S]+?)\n---\n/.exec(body)?.[1];
@@ -63,6 +79,11 @@ export function validate() {
   assert.equal(registry.remotes[0].url, `${config.app}/mcp`);
   assert.equal(registry.remotes[0].headers[0].isSecret, true);
   const action = read('action.yml');
+  const legacy = new URL('../../../apps/customer/integrations/github-action/action.yml', import.meta.url);   // only inside app-qa-ai
+  for (const [name, text] of [['action.yml', action], ...(existsSync(legacy) ? [['apps/customer/integrations/github-action/action.yml', readFileSync(legacy, 'utf8')]] : [])]) {
+    const bad = plainColons(text);
+    assert.equal(bad.length, 0, `${name}: a plain YAML value contains ": " and GitHub refuses the action (quote it or reword): line ${bad.join(', ')}`);
+  }
   assert.ok(action.includes(`default: ${config.app}`));
   assert.ok(action.includes('node "$GITHUB_ACTION_PATH/bin/testsy.mjs" "$@"'));
   assert.doesNotMatch(action, /curl|wget|npx|eval\s/);

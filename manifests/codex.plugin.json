@@ -1,6 +1,6 @@
 {
   "name": "testsy",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "Check releases, investigate failed runs and save regression tests with Testsy.",
   "author": {
     "name": "Testsy",
@@ -9,7 +9,7 @@
   },
   "homepage": "https://testsy.dev/docs/mcp/",
   "license": "MIT",
-  "repository": "https://github.com/nhatlongsinh/testsy-integrations",
+  "repository": "https://github.com/testsy-ai/testsy-integrations",
   "keywords": [
     "testing",
     "qa",

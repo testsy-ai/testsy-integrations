@@ -5,6 +5,7 @@
 //   node qa-ai.mjs run --test t_1,t_2 --junit qa-ai.xml
 //   node qa-ai.mjs run --project p_123 --url https://pr-42.preview.example.com   (website tests start at this deploy instead of their saved address)
 //   node qa-ai.mjs status j_abc   |   node qa-ai.mjs projects   |   node qa-ai.mjs tests --project p_123
+//   Devices:     node qa-ai.mjs run --project p_123 --device tablet --os-version "iOS 26" --orientation landscape   (app tests on that device this time; node qa-ai.mjs devices lists them)
 //   Mobile apps: node qa-ai.mjs run --project p_123 --build app-debug.apk   (uploads the build — or reuses it if that exact file is already there — and runs the app's tests with it)
 //                node qa-ai.mjs build upload MyApp.app.zip --project p_123 --label "$GITHUB_SHA"   |   node qa-ai.mjs builds --project p_123
 //                node qa-ai.mjs build ensure app.apk --project p_123 --fingerprint "$FP"   (upload only if missing)
@@ -19,7 +20,7 @@ import {randomUUID, createHash} from 'node:crypto';
 import {spawnSync} from 'node:child_process';
 import {tmpdir} from 'node:os';
 
-const VERSION = '1.8.0';
+const VERSION = '1.9.0';
 
 // Where the run comes from, shown on the Runs page ("GitHub Actions, main a41c2e"): the CI provider, commit, branch, job
 // and a link to the job, read from the CI's own environment variables. Nothing is sent outside a known CI.
@@ -226,15 +227,18 @@ async function run(a) {
   const target = typeof a.url === 'string' && a.url ? a.url : null;   // a preview/staging deploy: website tests start here
   if (a.url && !target) die('--url needs an address, e.g. --url https://pr-42.preview.example.com');
   const builds = await resolveBuilds(a);
+  // App tests on another phone/tablet or OS version for this run (the tests keep their own setting; see `devices`).
+  if (a.device === true || a['os-version'] === true || a.orientation === true) die('--device needs phone or tablet; --os-version needs a version, e.g. latest, "iOS 26" or "Android 14"; --orientation needs default, portrait or landscape');
+  const device = { ...(a.device ? { device: String(a.device) } : {}), ...(a['os-version'] ? { osVersion: String(a['os-version']) } : {}), ...(a.orientation ? { orientation: String(a.orientation) } : {}) };
   let started = [], skipped = [];
   if (a.project) {
-    const r = await call('POST', `/projects/${a.project}/run`, { mode, ...(builds.length ? { buildIds: builds.map(b => b.id) } : {}), ...(target ? { url: target } : {}) }, true, { allowNotStarted: true });
+    const r = await call('POST', `/projects/${a.project}/run`, { mode, ...(builds.length ? { buildIds: builds.map(b => b.id) } : {}), ...(target ? { url: target } : {}), ...device }, true, { allowNotStarted: true });
     started = r.started; skipped = r.skipped || []; for (const s of skipped) console.warn(`not started ${s.testId}: ${s.reason}`);
   }
   for (const t of String(a.test || '').split(',').filter(Boolean)) {
     let buildId;
     if (builds.length) { const { test } = await call('GET', `/tests/${t}`); buildId = builds.find(b => b.platform === test.options?.platform && b.appId === test.options?.appId)?.id; }
-    const r = await call('POST', `/tests/${t}/run`, { mode, ...(buildId ? { buildId } : {}), ...(target ? { url: target } : {}) }, true); started.push({ testId: t, runId: r.runId, mode: r.mode, link: r.link, watchUrl: r.watchUrl });
+    const r = await call('POST', `/tests/${t}/run`, { mode, ...(buildId ? { buildId } : {}), ...(target ? { url: target } : {}), ...device }, true); started.push({ testId: t, runId: r.runId, mode: r.mode, link: r.link, watchUrl: r.watchUrl });
   }
   if (!started.length && !skipped.length) die(a.project || a.test ? 'no runs started' : 'give --project <id> and/or --test <id,…>');
   // The watch link opens the run live and its result without signing in: for whoever reads this log, a PR or a chat.
@@ -281,6 +285,7 @@ const a = args(process.argv.slice(2)), cmd = a._[0];
 const code = await (async () => {
   if (cmd === 'run') return run(a);
   if (cmd === 'status') { for (const id of a._.slice(1)) { const { run: r } = await call('GET', `/runs/${id}`); console.log(JSON.stringify(r, null, 2)); } return 0; }
+  if (cmd === 'devices') { for (const d of (await call('GET', '/devices')).devices) console.log(`${d.platform}\t${d.forms.map(f => f.id === d.defaultForm ? `${f.id} (default)` : f.id).join(', ')}\t${d.versions.map(v => v.latest ? `${v.name} (latest)` : v.name).join(', ')}\torientation: ${(d.orientations ?? []).map(o => o.id === d.defaultOrientation ? `${o.id} (${o.name})` : o.id).join(', ')}`); return 0; }
   if (cmd === 'projects') { for (const p of (await call('GET', '/projects')).projects) console.log(`${p.id}\t${p.name}`); return 0; }
   if (cmd === 'tests') { if (!a.project) die('give --project <id>'); for (const t of (await call('GET', `/projects/${a.project}/tests`)).tests) console.log(`${t.id}\t${t.lastRun?.status ?? 'never run'}\t${t.options?.platform && t.options.platform !== 'web' ? `${t.options.platform}:${t.options.appId}\t` : ''}${t.title}`); return 0; }
   if (cmd === 'build' && (a._[1] === 'upload' || a._[1] === 'ensure')) {
@@ -313,6 +318,8 @@ const code = await (async () => {
 usage:
   qa-ai run --project <p_id> [--test <t_id,…>] [--mode auto|cold|warm] [--timeout 45m] [--junit file.xml] [--fail-on failed,error] [--no-wait] [--url <https://preview…>]
             [--build <app.apk | MyApp.app.zip | MyApp.app folder | https link | ab_id>]…  (app tests run these builds; files are uploaded, links imported) [--label <text>]
+            [--device phone|tablet] [--os-version <latest | "iOS 26" | "Android 14">] [--orientation default|portrait|landscape]  (app tests on that device this run; the tests keep their setting)
+  qa-ai devices   (the phones, tablets and OS versions app tests can use)
   qa-ai build upload <app.apk | MyApp.app.zip> --project <p_id> [--label <text>] [--fingerprint <text>] [--json]
   qa-ai build upload <file> --upload <signed link from create_build_upload>   (no API key)
   qa-ai build import <https link> --project <p_id> [--header "Name: value"]… [--label <text>] [--fingerprint <text>] [--json]

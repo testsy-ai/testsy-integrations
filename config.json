@@ -2,10 +2,10 @@
   "app": "https://app.testsy.dev",
   "landing": "https://testsy.dev",
   "repos": {
-    "source": "https://github.com/nhatlongsinh/testsy-integrations",
-    "action": "https://github.com/nhatlongsinh/testsy-action",
-    "claude-marketplace": "https://github.com/nhatlongsinh/testsy-claude-plugins",
-    "cursor": "https://github.com/nhatlongsinh/testsy-cursor",
-    "gemini": "https://github.com/nhatlongsinh/testsy-gemini-extension"
+    "source": "https://github.com/testsy-ai/testsy-integrations",
+    "action": "https://github.com/testsy-ai/testsy-action",
+    "claude-marketplace": "https://github.com/testsy-ai/testsy-claude-plugins",
+    "cursor": "https://github.com/testsy-ai/testsy-cursor",
+    "gemini": "https://github.com/testsy-ai/testsy-gemini-extension"
   }
 }

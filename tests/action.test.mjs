@@ -11,7 +11,7 @@ const root = fileURLToPath(new URL('..', import.meta.url));
 const action = readFileSync(join(root, 'action.yml'), 'utf8');
 const shell = action.slice(action.indexOf('      run: |\n') + '      run: |\n'.length).split('\n').map(line => line.startsWith('        ') ? line.slice(8) : line).join('\n');
 
-async function fixture(status, failOn = 'failed,error', project = 'p_fixture', fingerprint = '', targetUrl = '') {
+async function fixture(status, failOn = 'failed,error', project = 'p_fixture', fingerprint = '', targetUrl = '', device = '', osVersion = '') {
   const directory = mkdtempSync(join(tmpdir(), 'testsy-action-'));
   const junit = join(directory, 'result.xml'), calls = [], key = 'fixture-secret-value';
   const server = createServer((req, res) => { let raw = ''; req.on('data', c => { raw += c; }); req.on('end', () => handle(req, res, raw)); });
@@ -32,7 +32,7 @@ async function fixture(status, failOn = 'failed,error', project = 'p_fixture', f
   try {
     const result = await new Promise(resolve => execFile('bash', ['-c', shell], {timeout: 15000,
       env: {...process.env, QA_AI_API_KEY: key, QA_AI_URL: `http://127.0.0.1:${server.address().port}`, GITHUB_ACTION_PATH: root,
-        IN_PROJECT: project, IN_TESTS: '', IN_MODE: 'cold', IN_TIMEOUT: '5s', IN_FAIL_ON: failOn, IN_JUNIT: junit, IN_BUILD: '', IN_BUILD_LABEL: '', IN_FINGERPRINT: fingerprint, IN_TARGET_URL: targetUrl,
+        IN_PROJECT: project, IN_TESTS: '', IN_MODE: 'cold', IN_TIMEOUT: '5s', IN_FAIL_ON: failOn, IN_JUNIT: junit, IN_BUILD: '', IN_BUILD_LABEL: '', IN_FINGERPRINT: fingerprint, IN_TARGET_URL: targetUrl, IN_DEVICE: device, IN_OS_VERSION: osVersion,
         GITHUB_STEP_SUMMARY: join(directory, 'summary.md'), GITHUB_OUTPUT: join(directory, 'output.txt')}}, (error, stdout, stderr) => resolve({code: error?.code ?? 0, stdout, stderr})));
     assert.doesNotMatch(result.stdout + result.stderr, new RegExp(key), 'Never log the API key.');
     return {...result, calls, report: existsSync(junit) ? readFileSync(junit, 'utf8') : '', output: existsSync(join(directory, 'output.txt')) ? readFileSync(join(directory, 'output.txt'), 'utf8') : ''};
@@ -77,4 +77,14 @@ test('target-url makes website tests start at the deployment address', async () 
   assert.equal(result.code, 0, result.stderr);
   const start = result.calls.find(c => c.path === '/api/v1/projects/p_fixture/run');
   assert.equal(start.body()?.url, 'https://pr-3.preview.example.test');
+});
+
+test('device and os-version run the app tests on that device this time', async () => {
+  const result = await fixture('passed', 'failed,error', 'p_fixture', '', '', 'tablet', 'iOS 26');
+  assert.equal(result.code, 0, result.stderr);
+  const start = result.calls.find(c => c.method === 'POST' && c.path === '/api/v1/projects/p_fixture/run');
+  assert.equal(start.body().device, 'tablet'); assert.equal(start.body().osVersion, 'iOS 26');
+  const plain = await fixture('passed');
+  const body = plain.calls.find(c => c.method === 'POST' && c.path === '/api/v1/projects/p_fixture/run').body();
+  assert.equal('device' in body, false); assert.equal('osVersion' in body, false);
 });

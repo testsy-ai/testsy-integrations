@@ -6,6 +6,19 @@ The three shared skills are **testsy-check-release**, **testsy-investigate-run**
 
 This directory is the standalone, MIT-licensed integration package. Its license covers these integration files only; it does not license the Testsy service or the parent repository.
 
+## Published repositories (2026-10-24)
+
+| Root | Repository | Install |
+| --- | --- | --- |
+| source | https://github.com/testsy-ai/testsy-integrations | canonical `skills/`, manifests, CLI copy, action |
+| claude-marketplace | https://github.com/testsy-ai/testsy-claude-plugins | `/plugin marketplace add testsy-ai/testsy-claude-plugins` |
+| cursor | https://github.com/testsy-ai/testsy-cursor | directory submission pending |
+| gemini | https://github.com/testsy-ai/testsy-gemini-extension | `gemini extensions install https://github.com/testsy-ai/testsy-gemini-extension` |
+| action | https://github.com/testsy-ai/testsy-action | `uses: testsy-ai/testsy-action@v1` |
+| registry | MCP Registry `dev.testsy/testsy` 1.0.0 | published with DNS proof on testsy.dev (`scripts/ops/mcp-registry-publish.sh`) |
+
+`scripts/ops/integration-publish.sh <root> <repo> "<description>" [tag]` republishes a root after `npm run export`.
+
 ## Build and check
 
 Node.js 22 or later is required; no dependencies or API calls are needed:
@@ -24,7 +37,7 @@ Run these commands inside `integrations/testsy` in the parent repository. In a s
 From the parent Testsy application checkout, `npm run downloads` writes the same archives and checksum metadata to the landing site's fixed `apps/landing/public/downloads/testsy/` directory for its next deployment. Download publication does not create a marketplace listing. A downloaded source package supports the build commands above; a native client package is already assembled and uses its own README for installation.
 Run `npm run downloads:check` in the parent checkout to verify that the checked-in public archives still match the current package; it does not alter the public assets.
 
-Before building in the parent repository, refresh shared configuration with `npx tsx scripts/v11/config-gen.ts` from its root. Edit `shared/hosts.ts` for addresses and `apps/customer/public/cli/qa-ai.mjs` for the canonical CLI. The generator copies those into this package. In an exported standalone checkout, generated files are checked-in release inputs.
+Before building in the parent repository, refresh shared configuration with `npx tsx scripts/ops/config-gen.ts` from its root. Edit `shared/hosts.ts` for addresses and `apps/customer/public/cli/qa-ai.mjs` for the canonical CLI. The generator copies those into this package. In an exported standalone checkout, generated files are checked-in release inputs.
 
 ## Connect your workspace
 
@@ -50,7 +63,7 @@ Set `QA_AI_API_KEY` securely in the environment, then load the package for a loc
 claude --plugin-dir ./dist/claude
 ```
 
-For installation through the generated catalog, run `/plugin marketplace add /absolute/path/to/dist/claude-marketplace` and `/plugin install testsy@testsy` in Claude Code. Restart the session and inspect `/mcp` and `/skills`. The bundled HTTP configuration reads `QA_AI_API_KEY`; the plugin does not include its value.
+Published marketplace: `/plugin marketplace add testsy-ai/testsy-claude-plugins`, then `/plugin install testsy@testsy` (verified in a clean Claude Code profile, 2026-10-24). For a local build instead, run `/plugin marketplace add /absolute/path/to/dist/claude-marketplace` and `/plugin install testsy@testsy` in Claude Code. Restart the session afterwards.
 
 ### Cursor
 
@@ -108,7 +121,7 @@ steps:
       path: testsy-junit.xml
 ```
 
-Publish `dist/action` as a dedicated public action repository and tag its reviewed commit before documenting a remote `uses:` address. Pin that commit SHA in production workflows. Mobile build inputs accept APKs and zipped iOS Simulator apps; check current runner availability before relying on app execution.
+Published as [testsy-ai/testsy-action](https://github.com/testsy-ai/testsy-action) (`uses: testsy-ai/testsy-action@v1`, release v1.0.0; verified on real GitHub Actions in the private sandbox, 2026-10-24). Pin a commit SHA in production workflows. Pin that commit SHA in production workflows. Mobile build inputs accept APKs and zipped iOS Simulator apps; check current runner availability before relying on app execution.
 
 ## Registry and publication
 

@@ -3,12 +3,28 @@
   "name": "dev.testsy/testsy",
   "title": "Testsy",
   "description": "Run plain-English web QA tests and inspect check results and evidence.",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "websiteUrl": "https://testsy.dev",
   "repository": {
-    "url": "https://github.com/nhatlongsinh/testsy-integrations",
+    "url": "https://github.com/testsy-ai/testsy-integrations",
     "source": "github"
   },
+  "icons": [
+    {
+      "src": "https://testsy.dev/icon-512.png",
+      "mimeType": "image/png",
+      "sizes": [
+        "512x512"
+      ]
+    },
+    {
+      "src": "https://testsy.dev/favicon.svg",
+      "mimeType": "image/svg+xml",
+      "sizes": [
+        "any"
+      ]
+    }
+  ],
   "remotes": [
     {
       "type": "streamable-http",
@@ -16,8 +32,8 @@
       "headers": [
         {
           "name": "Authorization",
-          "description": "Enter Bearer followed by your Testsy workspace API key.",
-          "isRequired": true,
+          "description": "Optional: Bearer followed by a Testsy workspace API key. Without it, clients sign in with OAuth when a tool is first called; listing the tools needs neither.",
+          "isRequired": false,
           "isSecret": true
         }
       ]

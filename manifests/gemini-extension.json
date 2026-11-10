@@ -1,6 +1,6 @@
 {
   "name": "testsy",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "Check releases, investigate failed runs and save regression tests with Testsy.",
   "mcpServers": {
     "testsy": {

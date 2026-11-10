@@ -56,7 +56,7 @@ export function archive(folder, name) {
 export function writeArchives({publicAssets = false, check = false} = {}) {
   if (check && !publicAssets) throw new Error('Archive freshness checks require the public assets destination.');
   const repo = resolve(root, '../..');
-  if (publicAssets && !['shared/hosts.ts', 'scripts/v11/config-gen.ts', 'apps/landing/public'].every(path => existsSync(join(repo, path)))) {
+  if (publicAssets && !['shared/hosts.ts', 'scripts/ops/config-gen.ts', 'apps/landing/public'].every(path => existsSync(join(repo, path)))) {
     throw new Error('Public assets can only be written from the parent Testsy application checkout.');
   }
   const exported = exportRelease();
