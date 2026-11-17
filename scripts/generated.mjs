@@ -47,7 +47,7 @@ export function generatedFiles({app, landing, cli, legacyAction}) {
     mcpServers: {testsy: {httpUrl: `${app}/mcp`, headers: {Authorization: token}}},
     settings: [{name: 'Testsy API key', description: 'A workspace key from Testsy Settings → API keys.', envVar: 'TESTSY_AI_API_KEY', sensitive: true}]}));
   put('server.json', json({$schema: 'https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json',
-    name: 'dev.testsy/testsy', title: 'Testsy', description: 'Run plain-English web QA tests and inspect check results and evidence.', version,
+    name: 'dev.testsy/testsy', title: 'Testsy', description: 'Run plain-English QA tests on websites and mobile apps, then inspect each check and its evidence.', version,
     websiteUrl: landing, repository: {url: REPOS.source, source: 'github'},
     icons: [{src: `${landing}/icon-512.png`, mimeType: 'image/png', sizes: ['512x512']}, {src: `${landing}/favicon.svg`, mimeType: 'image/svg+xml', sizes: ['any']}],
     remotes: [{type: 'streamable-http', url: `${app}/mcp`,

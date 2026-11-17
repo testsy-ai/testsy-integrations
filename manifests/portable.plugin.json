@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "testsy",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Check releases, investigate failed runs and save regression tests with Testsy.",
   "author": {
     "name": "Testsy",

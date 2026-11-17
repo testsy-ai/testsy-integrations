@@ -20,7 +20,7 @@ import {randomUUID, createHash} from 'node:crypto';
 import {spawnSync} from 'node:child_process';
 import {tmpdir} from 'node:os';
 
-const VERSION = '1.9.0';
+const VERSION = '1.10.0';
 
 // Where the run comes from, shown on the Runs page ("GitHub Actions, main a41c2e"): the CI provider, commit, branch, job
 // and a link to the job, read from the CI's own environment variables. Nothing is sent outside a known CI.
@@ -287,6 +287,7 @@ const code = await (async () => {
   if (cmd === 'status') { for (const id of a._.slice(1)) { const { run: r } = await call('GET', `/runs/${id}`); console.log(JSON.stringify(r, null, 2)); } return 0; }
   if (cmd === 'devices') { for (const d of (await call('GET', '/devices')).devices) console.log(`${d.platform}\t${d.forms.map(f => f.id === d.defaultForm ? `${f.id} (default)` : f.id).join(', ')}\t${d.versions.map(v => v.latest ? `${v.name} (latest)` : v.name).join(', ')}\torientation: ${(d.orientations ?? []).map(o => o.id === d.defaultOrientation ? `${o.id} (${o.name})` : o.id).join(', ')}`); return 0; }
   if (cmd === 'projects') { for (const p of (await call('GET', '/projects')).projects) console.log(`${p.id}\t${p.name}`); return 0; }
+  if (cmd === 'duplicate') { const tid = a._[1]; if (!tid) die('give a test id: duplicate <test id> [--title "…"] [--to-project <id>]'); const r = await call('POST', `/tests/${tid}/duplicate`, { ...(a.title ? { title: String(a.title) } : {}), ...(a['to-project'] ? { projectId: String(a['to-project']) } : {}) }); console.log(`${r.id}\t${r.title}`); return 0; }
   if (cmd === 'tests') { if (!a.project) die('give --project <id>'); for (const t of (await call('GET', `/projects/${a.project}/tests`)).tests) console.log(`${t.id}\t${t.lastRun?.status ?? 'never run'}\t${t.options?.platform && t.options.platform !== 'web' ? `${t.options.platform}:${t.options.appId}\t` : ''}${t.title}`); return 0; }
   if (cmd === 'build' && (a._[1] === 'upload' || a._[1] === 'ensure')) {
     if (!a._[2]) die(`give the build file: testsy-ai build ${a._[1]} app.apk --project <id>`);
@@ -329,6 +330,7 @@ usage:
   testsy-ai status <j_id…>
   testsy-ai projects
   testsy-ai tests --project <p_id>
+  testsy-ai duplicate <t_id> [--title "New name"] [--to-project <p_id>]   (a copy of the test: its info is copied over; run history and schedules stay with the original)
 env: TESTSY_AI_API_KEY (required), TESTSY_AI_URL (default ${BASE})`);
   return cmd ? 2 : 0;
 })();
