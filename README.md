@@ -111,7 +111,7 @@ steps:
       node-version: '22'
   - uses: ./.github/actions/testsy
     with:
-      api-key: ${{ secrets.TESTSY_API_KEY }}
+      api-key: ${{ secrets.TESTSY_AI_API_KEY }}
       project: p_myproject
       fail-on: failed,error,blocked,inconclusive,cancelled
   - uses: actions/upload-artifact@v4

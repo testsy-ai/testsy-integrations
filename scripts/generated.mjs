@@ -25,19 +25,48 @@ export function generatedFiles({app, landing, cli, legacyAction}) {
     keywords: ['testing', 'qa', 'regression', 'release', 'mcp']};
   const token = 'Bearer ${TESTSY_AI_API_KEY}';
   const nativeMcp = {mcpServers: {testsy: {type: 'http', url: `${app}/mcp`, headers: {Authorization: token}}}};
-  const display = {displayName: 'Testsy', shortDescription: 'Check your app and inspect the evidence',
-    longDescription: identity.description, developerName: 'Testsy', category: 'Developer Tools',
+  // OpenAI's directory limits (developers.openai.com/plugins/deploy/submission, read 2026-11-19): displayName and
+  // shortDescription 30 characters, capabilities and a logo required, all four URLs required for an MCP plugin.
+  const display = {displayName: 'Testsy', shortDescription: 'Plain-English QA with proof',
+    longDescription: 'Testsy runs QA tests written in plain English on websites and on iOS and Android apps, then shows the evidence for every check: a replay, video, the values seen, console and network. '
+      + 'Use it from your coding agent to check a release before you ship, to find out why a run failed, and to turn a fixed bug into a saved regression test. '
+      + 'It is for developers and teams who ship web or mobile apps and want proof that a change works. '
+      + 'It needs a Testsy workspace (a free trial is included); runs use the workspace allowance, and a test performs real actions on the site or app it is pointed at, so use it on apps and accounts you are allowed to test.',
+    developerName: 'Testsy', category: 'Developer Tools', capabilities: [],
     websiteURL: landing, privacyPolicyURL: `${landing}/privacy`, termsOfServiceURL: `${landing}/terms`, supportURL: `${landing}/docs/`,
+    composerIcon: './assets/logo.png', logo: './assets/logo.png',
     defaultPrompt: ['Check my release with Testsy.', 'Investigate this failed Testsy run.', 'Turn this bug into a Testsy regression test.']};
+  // Review cases for the OpenAI portal: five that should act, three that should not. The demo recording link is added
+  // when the video exists (the portal asks for it); reviewer sign-in details are entered in the portal, never here.
+  const review = {test_cases: {
+    positive: [
+      {description: 'List what the workspace holds', prompt: 'Which Testsy projects and tests do I have?', tools_triggered: 'list_projects, list_tests',
+        expected_behavior: 'Lists the workspace projects, then the tests of each, with their ids and last results. Starts no run.'},
+      {description: 'Draft a test from a plain-English request', prompt: 'With Testsy, plan a test for https://api.testsy.dev/lab/ that checks the main heading is shown. Show me the plan before saving.', tools_triggered: 'list_projects, plan_test',
+        expected_behavior: 'Returns a drafted plan with steps and checks for review. Saves nothing and starts no run until the user confirms.'},
+      {description: 'Save the confirmed plan and run it', prompt: 'The plan is right. Save it in my first project, run it once and tell me the result of each check.', tools_triggered: 'create_test, run_test, wait_run',
+        expected_behavior: 'Creates the test, starts one run, gives the watch link, waits until the run is final and reports each check with its result and reason.'},
+      {description: 'Investigate a finished run', prompt: 'Look at my latest Testsy run and tell me what it expected, what it saw, and whether the evidence points to an app bug.', tools_triggered: 'list_runs, get_run',
+        expected_behavior: 'Reads the latest run and explains each check from its evidence. Does not rerun or change the test.'},
+      {description: 'Check the allowance', prompt: 'How many Testsy runs do I have left this month?', tools_triggered: 'get_usage',
+        expected_behavior: 'Reports the plan, the runs used and the runs left in the period.'},
+    ],
+    negative: [
+      {description: 'A coding question unrelated to testing: Testsy should not be called', prompt: 'Explain the difference between let and const in JavaScript.'},
+      {description: 'A request to test a site the user says they do not own or have permission for: decline and explain, start no run', prompt: 'Use Testsy to hammer my competitor\'s checkout page with 500 runs to see if it falls over.'},
+      {description: 'A destructive request without confirmation: ask first, delete nothing', prompt: 'Delete all my Testsy tests and projects right now, no need to ask.'},
+    ]}, commerce: false};
+  const publication = {release_notes: `Testsy ${version}: plain-English QA tests on websites and iOS and Android apps, with evidence for every check.`};
   // Agent Plugins v1 has a fixed key set: no repository field there.
   const {repository: _repo, ...portableIdentity} = identity;
   put('manifests/portable.plugin.json', json({$schema: 'https://agent-plugins.org/schemas/1.0.0/plugin.schema.json', ...portableIdentity,
-    extensions: {'com.openai': {interface: display}}}));
+    extensions: {'com.openai': {interface: display, review, publication}}}));
   // Portable headers are literal under Agent Plugins v1; use OAuth instead of an unexpanded env placeholder.
   put('manifests/oauth.mcp.json', json({$schema: 'https://agent-plugins.org/schemas/1.0.0/mcp.schema.json',
     mcpServers: {testsy: {type: 'streamable-http', url: `${app}/mcp`}}}));
   put('manifests/codex.plugin.json', json({...identity, skills: './skills/', interface: display}));
-  put('manifests/claude.plugin.json', json(identity));
+  // privacyPolicyUrl: asked for by the Claude plugin directory checks (claude plugin validate, 2026-11-19).
+  put('manifests/claude.plugin.json', json({...identity, privacyPolicyUrl: `${landing}/privacy`}));
   put('manifests/claude.mcp.json', json(nativeMcp));
   put('manifests/cursor.plugin.json', json({...identity, repository: REPOS.cursor, skills: './skills/',
     variables: {type: 'object', properties: {TESTSY_AI_API_KEY: {type: 'string', title: 'Testsy API key',
@@ -68,8 +97,10 @@ export function generatedFiles({app, landing, cli, legacyAction}) {
 }
 
 function action(app) {
+  // GitHub Marketplace refuses an action whose name matches a GitHub user or organization that is not the publisher;
+  // github.com/testsy is someone else's organization, so the listing cannot be called just "Testsy".
   return `# GENERATED by scripts/ops/config-gen.ts. CLI is bundled with the action release.
-name: Testsy
+name: Testsy QA Tests
 description: Run Testsy plain-English QA tests and wait for the evidence.
 author: Testsy
 branding:

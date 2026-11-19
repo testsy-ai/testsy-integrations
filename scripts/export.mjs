@@ -9,7 +9,7 @@ import {skillNames} from './validate.mjs';
 // A reviewed allowlist, rather than a recursive copy of the private parent checkout.
 export const sourceFiles = [
   '.gitignore', '.github/workflows/validate.yml', 'LICENSE', 'README.md', 'RELEASING.md', 'package.json', 'config.json', 'server.json', 'action.yml',
-  'bin/testsy.mjs', 'examples/prompts.md',
+  'bin/testsy.mjs', 'examples/prompts.md', 'assets/logo.png',
   ...['claude.mcp.json', 'claude.plugin.json', 'codex.plugin.json', 'cursor.mcp.json', 'cursor.plugin.json',
     'gemini-extension.json', 'oauth.mcp.json', 'portable.plugin.json'].map(name => `manifests/${name}`),
   ...skillNames.map(name => `skills/${name}/SKILL.md`),

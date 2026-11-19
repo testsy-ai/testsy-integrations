@@ -3,7 +3,7 @@
   "name": "dev.testsy/testsy",
   "title": "Testsy",
   "description": "Run plain-English QA tests on websites and mobile apps, then inspect each check and its evidence.",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "websiteUrl": "https://testsy.dev",
   "repository": {
     "url": "https://github.com/testsy-ai/testsy-integrations",
