@@ -7,7 +7,7 @@ import {execFileSync} from 'node:child_process';
 import {gunzipSync} from 'node:zlib';
 import {build, root} from '../scripts/build.mjs';
 import {exportRelease, releaseTargets, sourceFiles} from '../scripts/export.mjs';
-import {archive, portableGzip} from '../scripts/archive.mjs';
+import {archive, portableGzip, skillZip} from '../scripts/archive.mjs';
 import {generatedFiles} from '../scripts/generated.mjs';
 import {validate, skillNames} from '../scripts/validate.mjs';
 
@@ -94,4 +94,15 @@ test('download archives are deterministic and preserve a safe single repository 
   }
   assert.deepEqual(names.sort(), sourceFiles.map(name => `testsy-source/${name}`).sort());
   assert.ok(names.every(name => !name.split('/').includes('..')));
+});
+
+test('skill zips are deterministic store-only archives that hold the skill folder', () => {
+  const folder = join(root, 'skills/testsy-check-release');
+  const first = skillZip(folder, 'testsy-check-release'), second = skillZip(folder, 'testsy-check-release');
+  assert.ok(first.equals(second));
+  assert.equal(first.readUInt32LE(0), 0x04034b50);
+  const nameLength = first.readUInt16LE(26), size = first.readUInt32LE(18);
+  assert.equal(first.subarray(30, 30 + nameLength).toString('utf8'), 'testsy-check-release/SKILL.md');
+  assert.ok(first.subarray(30 + nameLength, 30 + nameLength + size).equals(readFileSync(join(folder, 'SKILL.md'))));
+  assert.equal(first.readUInt32LE(first.length - 22), 0x06054b50);
 });

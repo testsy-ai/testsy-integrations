@@ -61,7 +61,8 @@ export function validate() {
   assert.equal(portable.$schema, 'https://agent-plugins.org/schemas/1.0.0/plugin.schema.json');
   assert.deepEqual(Object.keys(portable).sort(), ['$schema', 'author', 'description', 'extensions', 'homepage', 'keywords', 'license', 'name', 'version'].sort());
   assert.equal(load('manifests/codex.plugin.json').mcpServers, undefined, 'Codex key authentication is configured using bearer-token-env-var, never literal portable headers.');
-  for (const name of ['claude.mcp.json', 'cursor.mcp.json']) {
+  assert.deepEqual(load('manifests/claude.mcp.json').mcpServers.testsy, {type: 'http', url: `${config.app}/mcp`}, 'The Claude plugin signs in with OAuth: no key header.');
+  for (const name of ['cursor.mcp.json']) {
     const server = load(`manifests/${name}`).mcpServers.testsy;
     assert.equal(server.url, `${config.app}/mcp`);
     assert.equal(server.headers.Authorization, 'Bearer ${TESTSY_AI_API_KEY}');

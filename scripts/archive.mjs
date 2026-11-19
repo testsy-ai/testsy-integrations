@@ -5,6 +5,7 @@ import {fileURLToPath} from 'node:url';
 import {createHash} from 'node:crypto';
 import {root} from './build.mjs';
 import {exportRelease, releaseTargets} from './export.mjs';
+import {skillNames} from './validate.mjs';
 
 /** RFC 1951 stored blocks + RFC 1952 wrapper. Native zlib builds can emit different
  * compressed bytes on macOS and Linux; a small uncompressed member is reproducible
@@ -53,6 +54,36 @@ export function archive(folder, name) {
   return portableGzip(Buffer.concat(chunks));
 }
 
+/** One skill folder as a .zip for upload in the Claude apps (Customize → Skills takes a ZIP that holds the skill folder).
+ * Stored entries (no compression), a fixed date and sorted names keep the bytes the same on every machine. */
+export function skillZip(folder, name) {
+  const crc32 = data => { let c = 0xffffffff; for (const byte of data) { c ^= byte; for (let bit = 0; bit < 8; bit++) c = (c >>> 1) ^ ((c & 1) ? 0xedb88320 : 0); } return (c ^ 0xffffffff) >>> 0; };
+  const entries = [];
+  (function walk(directory, prefix) {
+    for (const entry of readdirSync(directory, {withFileTypes: true}).sort((x, y) => x.name < y.name ? -1 : x.name > y.name ? 1 : 0)) {
+      const path = join(directory, entry.name), zipPath = `${prefix}/${entry.name}`;
+      if (entry.isDirectory()) { walk(path, zipPath); continue; }
+      if (!lstatSync(path).isFile() || entry.isSymbolicLink()) throw new Error(`Skill archive requires regular files: ${zipPath}`);
+      entries.push({name: Buffer.from(zipPath, 'utf8'), data: readFileSync(path)});
+    }
+  })(folder, name);
+  const locals = [], central = []; let offset = 0;
+  for (const {name: file, data} of entries) {
+    const crc = crc32(data), local = Buffer.alloc(30), dir = Buffer.alloc(46);
+    local.writeUInt32LE(0x04034b50, 0); local.writeUInt16LE(20, 4); local.writeUInt16LE(0x0800, 6); local.writeUInt16LE(0, 8);
+    local.writeUInt16LE(0, 10); local.writeUInt16LE(0x21, 12);   // 1980-01-01 00:00
+    local.writeUInt32LE(crc, 14); local.writeUInt32LE(data.length, 18); local.writeUInt32LE(data.length, 22); local.writeUInt16LE(file.length, 26);
+    dir.writeUInt32LE(0x02014b50, 0); dir.writeUInt16LE(20, 4); dir.writeUInt16LE(20, 6); dir.writeUInt16LE(0x0800, 8); dir.writeUInt16LE(0, 10);
+    dir.writeUInt16LE(0, 12); dir.writeUInt16LE(0x21, 14); dir.writeUInt32LE(crc, 16); dir.writeUInt32LE(data.length, 20); dir.writeUInt32LE(data.length, 24);
+    dir.writeUInt16LE(file.length, 28); dir.writeUInt32LE(offset, 42);
+    locals.push(local, file, data); central.push(dir, file); offset += 30 + file.length + data.length;
+  }
+  const directory = Buffer.concat(central), end = Buffer.alloc(22);
+  end.writeUInt32LE(0x06054b50, 0); end.writeUInt16LE(entries.length, 8); end.writeUInt16LE(entries.length, 10);
+  end.writeUInt32LE(directory.length, 12); end.writeUInt32LE(offset, 16);
+  return Buffer.concat([...locals, directory, end]);
+}
+
 export function writeArchives({publicAssets = false, check = false} = {}) {
   if (check && !publicAssets) throw new Error('Archive freshness checks require the public assets destination.');
   const repo = resolve(root, '../..');
@@ -64,6 +95,11 @@ export function writeArchives({publicAssets = false, check = false} = {}) {
   const files = {}, pending = new Map();
   for (const target of releaseTargets) {
     const filename = `testsy-${target}.tar.gz`, data = archive(join(exported, target), target);
+    pending.set(filename, data);
+    files[filename] = {sha256: createHash('sha256').update(data).digest('hex'), bytes: data.length};
+  }
+  for (const name of skillNames) {
+    const filename = `${name}.zip`, data = skillZip(join(root, 'skills', name), name);
     pending.set(filename, data);
     files[filename] = {sha256: createHash('sha256').update(data).digest('hex'), bytes: data.length};
   }

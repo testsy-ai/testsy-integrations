@@ -24,7 +24,10 @@ export function generatedFiles({app, landing, cli, legacyAction}) {
     repository: REPOS.source,   // plugin manifests (Claude, Codex, Cursor) take the address as a string
     keywords: ['testing', 'qa', 'regression', 'release', 'mcp']};
   const token = 'Bearer ${TESTSY_AI_API_KEY}';
-  const nativeMcp = {mcpServers: {testsy: {type: 'http', url: `${app}/mcp`, headers: {Authorization: token}}}};
+  // Claude plugin: no key header. Users sign in in the browser on the first tool call (OAuth); the same file works from the
+  // desktop app and the directory, where there is no environment variable to read, and it pairs with the connector listing
+  // (same URL). Headless use adds the server with a key instead: claude mcp add … --header (owner, 2026-11-20).
+  const nativeMcp = {mcpServers: {testsy: {type: 'http', url: `${app}/mcp`}}};
   // OpenAI's directory limits (developers.openai.com/plugins/deploy/submission, read 2026-11-19): displayName and
   // shortDescription 30 characters, capabilities and a logo required, all four URLs required for an MCP plugin.
   const display = {displayName: 'Testsy', shortDescription: 'Plain-English QA with proof',

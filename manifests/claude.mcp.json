@@ -2,10 +2,7 @@
   "mcpServers": {
     "testsy": {
       "type": "http",
-      "url": "https://app.testsy.dev/mcp",
-      "headers": {
-        "Authorization": "Bearer ${TESTSY_AI_API_KEY}"
-      }
+      "url": "https://app.testsy.dev/mcp"
     }
   }
 }
