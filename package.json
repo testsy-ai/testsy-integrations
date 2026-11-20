@@ -1,6 +1,6 @@
 {
   "name": "testsy-integrations",
-  "version": "1.1.5",
+  "version": "1.1.6",
   "private": true,
   "type": "module",
   "description": "Testsy agent workflows, client packages and pinned CI action.",
