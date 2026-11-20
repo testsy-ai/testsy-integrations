@@ -53,7 +53,7 @@ After building, add the local catalog with `codex plugin marketplace add ./dist/
 codex mcp add testsy --url "$(node -p "require('./config.json').app + '/mcp'")" --bearer-token-env-var TESTSY_AI_API_KEY
 ```
 
-Set `TESTSY_AI_API_KEY` securely in the environment of the client, restart it, and check its MCP and skill lists. The Codex package contains skills only; the command above supplies its API-key connection. CLI/server names can be namespaced by the host.
+Set `TESTSY_AI_API_KEY` securely in the environment of the client, restart it, and check its MCP and skill lists. The Codex package contains skills only; the command above supplies its API-key connection. CLI/server names can be namespaced by the host. Codex asks before it starts a run or changes a test. For unattended use (`codex exec` with approvals off), add `default_tools_approval_mode = "approve"` under `[mcp_servers.testsy]` in `~/.codex/config.toml`; without it Codex answers "MCP tool call requires approval".
 
 ### Claude Code
 

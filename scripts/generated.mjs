@@ -34,7 +34,7 @@ export function generatedFiles({app, landing, cli, legacyAction}) {
     longDescription: 'Testsy runs QA tests written in plain English on websites and on iOS and Android apps, then shows the evidence for every check: a replay, video, the values seen, console and network. '
       + 'Use it from your coding agent to check a release before you ship, to find out why a run failed, and to turn a fixed bug into a saved regression test. '
       + 'It is for developers and teams who ship web or mobile apps and want proof that a change works. '
-      + 'It needs a Testsy workspace (a free trial is included); runs use the workspace allowance, and a test performs real actions on the site or app it is pointed at, so use it on apps and accounts you are allowed to test.',
+      + 'It needs a Testsy workspace. A test performs real actions on the site or app it is pointed at, so use it on apps and accounts you are allowed to test.',
     developerName: 'Testsy', category: 'Developer Tools', capabilities: [],
     websiteURL: landing, privacyPolicyURL: `${landing}/privacy`, termsOfServiceURL: `${landing}/terms`, supportURL: `${landing}/docs/`,
     composerIcon: './assets/logo.png', logo: './assets/logo.png',
