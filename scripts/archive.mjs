@@ -67,6 +67,7 @@ export function skillZip(folder, name) {
       entries.push({name: Buffer.from(zipPath, 'utf8'), data: readFileSync(path)});
     }
   })(folder, name);
+  for (const entry of entries) if (!name) entry.name = entry.name.subarray(1);   // no top folder: drop the leading slash
   const locals = [], central = []; let offset = 0;
   for (const {name: file, data} of entries) {
     const crc = crc32(data), local = Buffer.alloc(30), dir = Buffer.alloc(46);
@@ -103,6 +104,9 @@ export function writeArchives({publicAssets = false, check = false} = {}) {
     pending.set(filename, data);
     files[filename] = {sha256: createHash('sha256').update(data).digest('hex'), bytes: data.length};
   }
+  // The Claude plugin as one file for upload (Customize → Plugins): the plugin folder's contents at the top of the ZIP.
+  { const filename = 'testsy-claude-plugin.zip', data = skillZip(join(exported, 'claude'), '');
+    pending.set(filename, data); files[filename] = {sha256: createHash('sha256').update(data).digest('hex'), bytes: data.length}; }
   pending.set('SHA256SUMS', Buffer.from(Object.entries(files).map(([name, value]) => `${value.sha256}  ${name}\n`).join('')));
   const release = JSON.parse(readFileSync(join(exported, 'release.json'), 'utf8'));
   pending.set('release.json', Buffer.from(JSON.stringify({...release, files,
