@@ -1,6 +1,13 @@
-# Testsy integrations
+# Testsy integrations: AI testing for Claude Code, Cursor and Codex
 
-Turn release checks into saved plain-English tests, inspect failed runs, and keep regression coverage after a fix. These packages connect coding agents to your Testsy workspace through the hosted MCP endpoint.
+Testsy is AI end-to-end testing for websites and iPhone, iPad and Android apps: describe a flow in plain English, and your coding agent (Claude Code, Cursor, Codex, Gemini CLI) runs it through the Testsy MCP server and gets back each check's result, the value it saw, and a video.
+
+Quick start:
+1. Add the MCP server to your agent: https://testsy.dev/docs/mcp/
+2. Ask: "test that a new user can sign up and confirm their email on https://your-app.example".
+3. Read the verdict, the value behind each check and the video. New accounts get 10 free tests, no card: [testsy.dev](https://testsy.dev/?utm_source=organic&utm_medium=referral&utm_content=readme)
+
+These packages turn release checks into saved plain-English tests, inspect failed runs, and keep regression coverage after a fix. They connect coding agents to your Testsy workspace through the hosted MCP endpoint.
 
 The three shared skills are **testsy-check-release**, **testsy-investigate-run**, and **testsy-regression-from-bug**. See [example requests](examples/prompts.md). All skills preserve expected behavior and distinguish app failures from blocked, inconclusive and execution-error outcomes.
 
